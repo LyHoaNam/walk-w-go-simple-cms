@@ -44,15 +44,12 @@ func main() {
 
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
-	productRepo := repository.NewProductRepository(db)
 
 	// Initialize usecases
 	userUsecase := usecase.NewUserUsecase(userRepo)
-	productUsecase := usecase.NewProductUsecase(productRepo)
 
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
-	productHandler := handler.NewProductHandler(productUsecase)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -86,10 +83,6 @@ func main() {
 	users.Get("/:id", userHandler.GetUser)       // Lấy user theo ID
 	users.Put("/:id", userHandler.UpdateUser)    // Cập nhật user
 	users.Delete("/:id", userHandler.DeleteUser) // Xóa user
-
-	// Product routes
-	product := api.Group("/products")
-	product.Post("/", productHandler.CreateProduct)
 
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
