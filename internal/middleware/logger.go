@@ -7,19 +7,19 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
-// Logger middleware ghi log cho mỗi request
+// Logger middleware logs each request
 func Logger() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Lưu thời gian bắt đầu
+		// Save start time
 		start := time.Now()
 
-		// Xử lý request
+		// Process request
 		err := c.Next()
 
-		// Tính thời gian xử lý
+		// Calculate processing time
 		duration := time.Since(start)
 
-		// Log thông tin request
+		// Log request information
 		log.Infof(
 			"[%s] %s %s - Status: %d - Duration: %v",
 			c.IP(),

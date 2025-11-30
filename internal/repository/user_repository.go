@@ -11,21 +11,21 @@ import (
 	"github.com/doug-martin/goqu/v9"
 )
 
-// UserRepository xử lý tất cả các thao tác database liên quan đến user
+// UserRepository handles all database operations related to users
 type UserRepository struct {
 	db *database.DB
 }
 
-// NewUserRepository tạo instance mới của UserRepository
+// NewUserRepository creates a new instance of UserRepository
 func NewUserRepository(db *database.DB) *UserRepository {
 	return &UserRepository{
 		db: db,
 	}
 }
 
-// Create tạo user mới trong database
+// Create creates a new user in the database
 func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
-	// Tạo query insert với goqu
+	// Build insert query with goqu
 	query, args, err := r.db.Dialect.
 		Insert("users").
 		Rows(goqu.Record{
@@ -44,7 +44,7 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Lấy ID của user vừa tạo
+	// Get the ID of the created user
 	id, err := result.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("failed to get last insert id: %w", err)
@@ -54,9 +54,9 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 	return nil
 }
 
-// GetByID lấy thông tin user theo ID
+// GetByID gets user information by ID
 func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, error) {
-	// Tạo query select với goqu
+	// Build select query with goqu
 	query, args, err := r.db.Dialect.
 		Select("id", "name", "email", "created_at", "updated_at").
 		From("users").
@@ -67,7 +67,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, er
 		return nil, fmt.Errorf("failed to build select query: %w", err)
 	}
 
-	// Thực thi query
+	// Execute query
 	var user model.User
 	err = r.db.SQL.QueryRowContext(ctx, query, args...).Scan(
 		&user.ID,
@@ -87,9 +87,9 @@ func (r *UserRepository) GetByID(ctx context.Context, id int64) (*model.User, er
 	return &user, nil
 }
 
-// GetAll lấy danh sách tất cả users
+// GetAll gets a list of all users
 func (r *UserRepository) GetAll(ctx context.Context) ([]*model.User, error) {
-	// Tạo query select với goqu
+	// Build select query with goqu
 	query, args, err := r.db.Dialect.
 		Select("id", "name", "email", "created_at", "updated_at").
 		From("users").
@@ -100,14 +100,14 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]*model.User, error) {
 		return nil, fmt.Errorf("failed to build select query: %w", err)
 	}
 
-	// Thực thi query
+	// Execute query
 	rows, err := r.db.SQL.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get users: %w", err)
 	}
 	defer rows.Close()
 
-	// Đọc kết quả
+	// Read results
 	var users []*model.User
 	for rows.Next() {
 		var user model.User
@@ -131,9 +131,9 @@ func (r *UserRepository) GetAll(ctx context.Context) ([]*model.User, error) {
 	return users, nil
 }
 
-// Update cập nhật thông tin user
+// Update updates user information
 func (r *UserRepository) Update(ctx context.Context, id int64, updates map[string]interface{}) error {
-	// Tạo query update với goqu
+	// Build update query with goqu
 	query, args, err := r.db.Dialect.
 		Update("users").
 		Set(updates).
@@ -150,7 +150,7 @@ func (r *UserRepository) Update(ctx context.Context, id int64, updates map[strin
 		return fmt.Errorf("failed to update user: %w", err)
 	}
 
-	// Kiểm tra số dòng bị ảnh hưởng
+	// Check rows affected
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
@@ -163,9 +163,9 @@ func (r *UserRepository) Update(ctx context.Context, id int64, updates map[strin
 	return nil
 }
 
-// Delete xóa user theo ID
+// Delete deletes a user by ID
 func (r *UserRepository) Delete(ctx context.Context, id int64) error {
-	// Tạo query delete với goqu
+	// Build delete query with goqu
 	query, args, err := r.db.Dialect.
 		Delete("users").
 		Where(goqu.Ex{"id": id}).

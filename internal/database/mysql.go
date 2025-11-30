@@ -10,13 +10,13 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// DB chứa kết nối database và goqu dialect
+// DB contains database connection and goqu dialect
 type DB struct {
 	SQL     *sql.DB
 	Dialect goqu.DialectWrapper
 }
 
-// Config chứa thông tin cấu hình database
+// Config contains database configuration
 type Config struct {
 	Host            string
 	Port            string
@@ -28,9 +28,9 @@ type Config struct {
 	ConnMaxLifetime time.Duration
 }
 
-// Connect tạo kết nối đến MySQL database
+// Connect creates a connection to MySQL database
 func Connect(cfg Config) (*DB, error) {
-	// Tạo DSN (Data Source Name) cho MySQL
+	// Create DSN (Data Source Name) for MySQL
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4",
 		cfg.User,
 		cfg.Password,
@@ -39,13 +39,13 @@ func Connect(cfg Config) (*DB, error) {
 		cfg.Name,
 	)
 
-	// Mở kết nối database
+	// Open database connection
 	sqlDB, err := sql.Open("mysql", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
-	// Cấu hình connection pool
+	// Configure connection pool
 	sqlDB.SetMaxOpenConns(cfg.MaxOpenConns)
 	sqlDB.SetMaxIdleConns(cfg.MaxIdleConns)
 	sqlDB.SetConnMaxLifetime(cfg.ConnMaxLifetime)
@@ -55,7 +55,7 @@ func Connect(cfg Config) (*DB, error) {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}
 
-	// Tạo goqu dialect wrapper
+	// Create goqu dialect wrapper
 	dialect := goqu.Dialect("mysql")
 
 	return &DB{
@@ -64,7 +64,7 @@ func Connect(cfg Config) (*DB, error) {
 	}, nil
 }
 
-// Close đóng kết nối database
+// Close closes the database connection
 func (db *DB) Close() error {
 	return db.SQL.Close()
 }

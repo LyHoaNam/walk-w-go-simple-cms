@@ -2,7 +2,7 @@ package model
 
 import "time"
 
-// User đại diện cho một user trong hệ thống
+// User represents a user in the system
 type User struct {
 	ID        int64     `db:"id" json:"id"`
 	Name      string    `db:"name" json:"name"`
@@ -11,13 +11,13 @@ type User struct {
 	UpdatedAt time.Time `db:"updated_at" json:"updated_at"`
 }
 
-// CreateUserRequest là request body để tạo user mới
+// CreateUserRequest is the request body for creating a new user
 type CreateUserRequest struct {
 	Name  string `json:"name" validate:"required"`
 	Email string `json:"email" validate:"required,email"`
 }
 
-// UpdateUserRequest là request body để cập nhật user
+// UpdateUserRequest is the request body for updating a user
 type UpdateUserRequest struct {
 	Name  string `json:"name"`
 	Email string `json:"email" validate:"omitempty,email"`

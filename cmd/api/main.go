@@ -80,11 +80,11 @@ func main() {
 
 	// User routes
 	users := api.Group("/users")
-	users.Post("/", userHandler.CreateUser)      // Tạo user mới
-	users.Get("/", userHandler.GetAllUsers)      // Lấy danh sách users
-	users.Get("/:id", userHandler.GetUser)       // Lấy user theo ID
-	users.Put("/:id", userHandler.UpdateUser)    // Cập nhật user
-	users.Delete("/:id", userHandler.DeleteUser) // Xóa user
+	users.Post("/", userHandler.CreateUser)      // Create new user
+	users.Get("/", userHandler.GetAllUsers)      // Get list of users
+	users.Get("/:id", userHandler.GetUser)       // Get user by ID
+	users.Put("/:id", userHandler.UpdateUser)    // Update user
+	users.Delete("/:id", userHandler.DeleteUser) // Delete user
 
 	product := api.Group("/products")
 	product.Get("/", productHandler.GetAll)

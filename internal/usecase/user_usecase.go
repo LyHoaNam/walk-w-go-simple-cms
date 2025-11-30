@@ -9,37 +9,37 @@ import (
 	"simple-template/internal/repository"
 )
 
-// UserUsecase xử lý business logic liên quan đến user
+// UserUsecase handles business logic related to users
 type UserUsecase struct {
 	userRepo *repository.UserRepository
 }
 
-// NewUserUsecase tạo instance mới của UserUsecase
+// NewUserUsecase creates a new instance of UserUsecase
 func NewUserUsecase(userRepo *repository.UserRepository) *UserUsecase {
 	return &UserUsecase{
 		userRepo: userRepo,
 	}
 }
 
-// CreateUser tạo user mới
+// CreateUser creates a new user
 func (u *UserUsecase) CreateUser(ctx context.Context, req *model.CreateUserRequest) (*model.User, error) {
 	// Validate input
 	if err := u.validateCreateUser(req); err != nil {
 		return nil, err
 	}
 
-	// Tạo user object
+	// Create user object
 	user := &model.User{
 		Name:  strings.TrimSpace(req.Name),
 		Email: strings.ToLower(strings.TrimSpace(req.Email)),
 	}
 
-	// Gọi repository để lưu vào database
+	// Call repository to save to database
 	if err := u.userRepo.Create(ctx, user); err != nil {
 		return nil, fmt.Errorf("failed to create user: %w", err)
 	}
 
-	// Lấy thông tin user vừa tạo (để có created_at, updated_at)
+	// Get the created user info (to have created_at, updated_at)
 	createdUser, err := u.userRepo.GetByID(ctx, user.ID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get created user: %w", err)
@@ -48,13 +48,13 @@ func (u *UserUsecase) CreateUser(ctx context.Context, req *model.CreateUserReque
 	return createdUser, nil
 }
 
-// GetUserByID lấy thông tin user theo ID
+// GetUserByID gets user information by ID
 func (u *UserUsecase) GetUserByID(ctx context.Context, id int64) (*model.User, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid user id")
 	}
 
-	// Gọi repository để lấy user
+	// Call repository to get user
 	user, err := u.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -63,9 +63,9 @@ func (u *UserUsecase) GetUserByID(ctx context.Context, id int64) (*model.User, e
 	return user, nil
 }
 
-// GetAllUsers lấy danh sách tất cả users
+// GetAllUsers gets a list of all users
 func (u *UserUsecase) GetAllUsers(ctx context.Context) ([]*model.User, error) {
-	// Gọi repository để lấy danh sách users
+	// Call repository to get list of users
 	users, err := u.userRepo.GetAll(ctx)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (u *UserUsecase) GetAllUsers(ctx context.Context) ([]*model.User, error) {
 	return users, nil
 }
 
-// UpdateUser cập nhật thông tin user
+// UpdateUser updates user information
 func (u *UserUsecase) UpdateUser(ctx context.Context, id int64, req *model.UpdateUserRequest) (*model.User, error) {
 	if id <= 0 {
 		return nil, fmt.Errorf("invalid user id")
@@ -94,17 +94,17 @@ func (u *UserUsecase) UpdateUser(ctx context.Context, id int64, req *model.Updat
 		updates["email"] = strings.ToLower(strings.TrimSpace(req.Email))
 	}
 
-	// Kiểm tra có gì để update không
+	// Check if there's anything to update
 	if len(updates) == 0 {
 		return nil, fmt.Errorf("no fields to update")
 	}
 
-	// Gọi repository để update
+	// Call repository to update
 	if err := u.userRepo.Update(ctx, id, updates); err != nil {
 		return nil, err
 	}
 
-	// Lấy thông tin user sau khi update
+	// Get user info after update
 	updatedUser, err := u.userRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get updated user: %w", err)
@@ -113,13 +113,13 @@ func (u *UserUsecase) UpdateUser(ctx context.Context, id int64, req *model.Updat
 	return updatedUser, nil
 }
 
-// DeleteUser xóa user theo ID
+// DeleteUser deletes a user by ID
 func (u *UserUsecase) DeleteUser(ctx context.Context, id int64) error {
 	if id <= 0 {
 		return fmt.Errorf("invalid user id")
 	}
 
-	// Gọi repository để xóa user
+	// Call repository to delete user
 	if err := u.userRepo.Delete(ctx, id); err != nil {
 		return err
 	}

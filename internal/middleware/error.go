@@ -7,10 +7,10 @@ import (
 	"github.com/gofiber/fiber/v2/log"
 )
 
-// ErrorHandler middleware xử lý lỗi toàn cục
+// ErrorHandler middleware handles global errors
 func ErrorHandler() fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		// Bắt panic và xử lý
+		// Catch and handle panics
 		defer func() {
 			if r := recover(); r != nil {
 				log.Errorf("Panic recovered: %v", r)
@@ -18,10 +18,10 @@ func ErrorHandler() fiber.Handler {
 			}
 		}()
 
-		// Xử lý request
+		// Process request
 		err := c.Next()
 
-		// Nếu có lỗi, xử lý ở đây
+		// If there's an error, handle it here
 		if err != nil {
 			// Fiber error
 			if e, ok := err.(*fiber.Error); ok {

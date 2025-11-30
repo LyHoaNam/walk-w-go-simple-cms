@@ -9,20 +9,20 @@ import (
 	"github.com/joho/godotenv"
 )
 
-// Config chứa tất cả cấu hình của ứng dụng
+// Config contains all application configuration
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
 }
 
-// ServerConfig chứa cấu hình server
+// ServerConfig contains server configuration
 type ServerConfig struct {
 	Host string
 	Port string
 	Env  string
 }
 
-// DatabaseConfig chứa cấu hình database
+// DatabaseConfig contains database configuration
 type DatabaseConfig struct {
 	Host            string
 	Port            string
@@ -34,10 +34,10 @@ type DatabaseConfig struct {
 	ConnMaxLifetime time.Duration
 }
 
-// Load đọc file .env và trả về Config
-// Nếu file .env không tồn tại, sẽ sử dụng giá trị mặc định
+// Load reads the .env file and returns Config
+// If .env file doesn't exist, default values will be used
 func Load() (*Config, error) {
-	// Đọc file .env (không bắt buộc phải có)
+	// Read .env file (not mandatory)
 	_ = godotenv.Load()
 
 	config := &Config{
@@ -66,7 +66,7 @@ func Load() (*Config, error) {
 	return config, nil
 }
 
-// validate kiểm tra các cấu hình bắt buộc
+// validate checks required configuration
 func (c *Config) validate() error {
 	if c.Database.Host == "" {
 		return fmt.Errorf("DB_HOST is required")
@@ -89,7 +89,7 @@ func getEnv(key, defaultValue string) string {
 	return value
 }
 
-// getEnvAsInt đọc biến môi trường dạng số nguyên
+// getEnvAsInt reads environment variable as integer
 func getEnvAsInt(key string, defaultValue int) int {
 	valueStr := os.Getenv(key)
 	if valueStr == "" {
@@ -102,7 +102,7 @@ func getEnvAsInt(key string, defaultValue int) int {
 	return value
 }
 
-// getEnvAsDuration đọc biến môi trường dạng duration
+// getEnvAsDuration reads environment variable as duration
 func getEnvAsDuration(key string, defaultValue time.Duration) time.Duration {
 	valueStr := os.Getenv(key)
 	if valueStr == "" {

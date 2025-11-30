@@ -2,7 +2,7 @@ package response
 
 import "github.com/gofiber/fiber/v2"
 
-// Response là cấu trúc chuẩn cho API response
+// Response is the standard structure for API responses
 type Response struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message,omitempty"`
@@ -10,7 +10,7 @@ type Response struct {
 	Error   string      `json:"error,omitempty"`
 }
 
-// Success trả về response thành công
+// Success returns a successful response
 func Success(c *fiber.Ctx, data interface{}, message string) error {
 	return c.Status(fiber.StatusOK).JSON(Response{
 		Success: true,
@@ -19,7 +19,7 @@ func Success(c *fiber.Ctx, data interface{}, message string) error {
 	})
 }
 
-// Created trả về response khi tạo mới thành công
+// Created returns a response when creation is successful
 func Created(c *fiber.Ctx, data interface{}, message string) error {
 	return c.Status(fiber.StatusCreated).JSON(Response{
 		Success: true,
@@ -28,7 +28,7 @@ func Created(c *fiber.Ctx, data interface{}, message string) error {
 	})
 }
 
-// Error trả về response lỗi
+// Error returns an error response
 func Error(c *fiber.Ctx, statusCode int, message string, err error) error {
 	response := Response{
 		Success: false,
@@ -42,17 +42,17 @@ func Error(c *fiber.Ctx, statusCode int, message string, err error) error {
 	return c.Status(statusCode).JSON(response)
 }
 
-// BadRequest trả về lỗi 400
+// BadRequest returns a 400 error
 func BadRequest(c *fiber.Ctx, message string, err error) error {
 	return Error(c, fiber.StatusBadRequest, message, err)
 }
 
-// NotFound trả về lỗi 404
+// NotFound returns a 404 error
 func NotFound(c *fiber.Ctx, message string) error {
 	return Error(c, fiber.StatusNotFound, message, nil)
 }
 
-// InternalServerError trả về lỗi 500
+// InternalServerError returns a 500 error
 func InternalServerError(c *fiber.Ctx, message string, err error) error {
 	return Error(c, fiber.StatusInternalServerError, message, err)
 }
