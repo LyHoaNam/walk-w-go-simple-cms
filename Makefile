@@ -40,7 +40,7 @@ docker-rebuild: ## Rebuild và restart Docker containers
 	@echo "Rebuilding Docker containers..."
 	$(DOCKER_COMPOSE) up -d --build
 
-migrate: ## Chạy database migrations
+migrate:
 	@echo "Running migrations..."
 	@if [ -f .env ]; then \
 		export $$(cat .env | xargs) && \
