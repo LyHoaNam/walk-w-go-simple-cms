@@ -33,7 +33,7 @@ func (h *ProductHandler) GetByID(c *fiber.Ctx) error {
 	return response.Success(c, product, "product retrieved successfully")
 }
 
-// POST /api/v1/products
+// GET /api/v1/products
 func (h *ProductHandler) GetAll(c *fiber.Ctx) error {
 	products, err := h.productUsecase.GetAll(c.Context())
 	if err != nil {
@@ -42,7 +42,7 @@ func (h *ProductHandler) GetAll(c *fiber.Ctx) error {
 	return response.Success(c, products, "product retrieved successfully")
 }
 
-// PUT /api/v1/product
+// POST /api/v1/product
 func (h *ProductHandler) CreateProduct(c *fiber.Ctx) error {
 	var req model.CreateProductRequest
 	if err := c.BodyParser(&req); err != nil {

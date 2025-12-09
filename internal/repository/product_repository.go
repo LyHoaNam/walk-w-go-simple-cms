@@ -22,28 +22,78 @@ func NewProductRepository(db *database.DB) *ProductRepository {
 
 func (r *ProductRepository) Create(ctx context.Context, product *model.Product) error {
 
-	query, arg, err := r.db.Dialect.Insert("product").Rows(goqu.Record{
+	// insert product
+	queryProduct, arg, err := r.db.Dialect.Insert("product").Rows(goqu.Record{
 		"name":        product.Name,
 		"sku":         product.SKU,
+		"status":      product.Status,
+		"img_url":     product.ImgUrl,
 		"category_id": product.CategoryID,
 		"description": product.Description,
+		"dimension":   product.Dimension,
+		"weight":      product.Weight,
+		"brand":       product.Brand,
+		"material":    product.Material,
+		"origin":      product.Origin,
 	}).ToSQL()
 
 	if err != nil {
 		return fmt.Errorf("fail: %w", err)
 	}
-
-	result, err := r.db.SQL.ExecContext(ctx, query, arg...)
+	result, err := r.db.SQL.ExecContext(ctx, queryProduct, arg...)
 	if err != nil {
 		return fmt.Errorf("fail: %w", err)
 	}
-
-	id, err := result.LastInsertId()
-
+	productID, err := result.LastInsertId()
+	product.ID = productID
 	if err != nil {
 		return fmt.Errorf("fail: %w", err)
 	}
-	product.ID = id
+	// insert variants
+	for i, variant := range product.Variant {
+		queryVariant, arg, err := r.db.Dialect.Insert("product_variant").Rows(goqu.Record{
+			"name":          variant.Name,
+			"display_name":  variant.DisplayName,
+			"display_order": variant.DisplayOrder,
+			"is_required":   variant.IsRequire,
+			"product_id":    productID,
+		}).ToSQL()
+
+		if err != nil {
+			return fmt.Errorf("fail: %w", err)
+		}
+		result, err = r.db.SQL.ExecContext(ctx, queryVariant, arg...)
+		if err != nil {
+			return fmt.Errorf("fail: %w", err)
+		}
+		variantID, err := result.LastInsertId()
+		if err != nil {
+			return fmt.Errorf("fail: %w", err)
+		}
+		product.Variant[i].ID = variantID
+
+		for _, value := range variant.Values {
+			queryValue, arg, err := r.db.Dialect.Insert("product_variant_value").Rows(goqu.Record{
+				"attribute_id":   variantID,
+				"value":          value.Value,
+				"display_order":  value.DisplayOrder,
+				"stock_quantity": value.StockQuantity,
+			}).ToSQL()
+			if err != nil {
+				return fmt.Errorf("fail: %w", err)
+			}
+			result, err = r.db.SQL.ExecContext(ctx, queryValue, arg...)
+			if err != nil {
+				return fmt.Errorf("fail: %w", err)
+			}
+			valueID, err := result.LastInsertId()
+			if err != nil {
+				return fmt.Errorf("fail: %w", err)
+			}
+			product.Variant[i].Values[i].ID = valueID
+		}
+	}
+
 	return nil
 }
 
