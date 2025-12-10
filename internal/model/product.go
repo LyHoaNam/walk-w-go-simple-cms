@@ -27,7 +27,13 @@ type ProductVariant struct {
 	DisplayOrder int64                 `db:"display_order" json:"display_order"`
 	IsRequire    int16                 `db:"is_require" json:"is_require"`
 	ProductID    int64                 `db:"product_id" json:"product_id"`
+	CreatedAt    time.Time             `db:"create_at" json:"created_at"`
+	UpdatedAt    time.Time             `db:"update_at" json:"updated_at"`
 	Values       []ProductVariantValue `db:"-" json:"variants,omitempty"`
+}
+
+func (v *ProductVariant) GetID() int64 {
+	return v.ProductID
 }
 
 type ProductVariantValue struct {
@@ -40,6 +46,10 @@ type ProductVariantValue struct {
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 }
 
+func (v *ProductVariantValue) GetID() int64 {
+	return v.AttributeID
+}
+
 type CreateProductVariantValue struct {
 	ID            int64  `json:"id" validate:"required"`
 	AttributeID   int64  `json:"attribute_id" validate:"required"`
@@ -49,7 +59,8 @@ type CreateProductVariantValue struct {
 }
 
 type ProductVariantWithValues struct {
-	VariantID    int64  `json:"id" validate:"required"`
+	ID           int64  `json:"id" validate:"required"`
+	VariantID    int64  `json:"variant_id" validate:"required"`
 	Name         string `json:"name" validate:"required"`
 	DisplayName  string `json:"display_name,omitempty"`
 	DisplayOrder *int64 `json:"display_order,omitempty"`

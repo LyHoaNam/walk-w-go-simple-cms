@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"simple-template/internal/database"
 	"simple-template/internal/model"
+	"simple-template/internal/utils"
+	"strconv"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -274,8 +276,92 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 	return product, nil
 }
 
+func (r *ProductRepository) GetVariantValuesByAttributeID(ctx context.Context, attributeIDs []string) ([]*model.ProductVariantValue, error) {
+	query, args, err := r.db.Dialect.
+		Select("id", "attribute_id", "display_order", "stock_quantity", "value", "created_at", "updated_at").
+		From("product_variant_value").
+		Where(goqu.Ex{"attribute_id": attributeIDs}).
+		Order(goqu.I("created_at").Desc()).
+		ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("fail to get variant attribute query: %w", err)
+	}
+
+	rows, err := r.db.SQL.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("fail to select variant attribute value: %w", err)
+	}
+	var values []*model.ProductVariantValue
+	for rows.Next() {
+		var value model.ProductVariantValue
+		err := rows.Scan(
+			&value.ID,
+			&value.AttributeID,
+			&value.DisplayOrder,
+			&value.StockQuantity,
+			&value.Value,
+			&value.CreatedAt,
+			&value.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan fail variant value: %w", err)
+		}
+		values = append(values, &value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	return values, nil
+}
+
+func (r *ProductRepository) GetVariantsByProductIDs(ctx context.Context, productIDs []string) ([]*model.ProductVariant, error) {
+	query, args, err := r.db.Dialect.
+		Select("id", "name", "display_name", "display_order", "is_required", "product_id", "created_at", "updated_at").
+		From("product_variant").
+		Where(goqu.Ex{"product_id": productIDs}).
+		Order(goqu.I("created_at").Desc()).
+		ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build select query: %w", err)
+	}
+
+	rows, err := r.db.SQL.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get product variants: %w", err)
+	}
+	var variants []*model.ProductVariant
+	for rows.Next() {
+		var variant model.ProductVariant
+		err := rows.Scan(
+			&variant.ID,
+			&variant.Name,
+			&variant.DisplayName,
+			&variant.DisplayOrder,
+			&variant.IsRequire,
+			&variant.ProductID,
+			&variant.CreatedAt,
+			&variant.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan product variants: %w", err)
+		}
+		variants = append(variants, &variant)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	return variants, nil
+}
+
 func (r *ProductRepository) GetAll(ctx context.Context) ([]*model.Product, error) {
-	query, args, err := r.db.Dialect.Select("id", "name", "sku", "description", "category_id", "created_at", "updated_at").From("product").Order(goqu.I("created_at").Desc()).ToSQL()
+	query, args, err := r.db.Dialect.
+		Select("id",
+			"name",
+			"sku",
+			"description",
+			"category_id",
+			"created_at",
+			"updated_at").From("product").Order(goqu.I("created_at").Desc()).ToSQL()
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to build select query: %w", err)
@@ -303,9 +389,37 @@ func (r *ProductRepository) GetAll(ctx context.Context) ([]*model.Product, error
 		}
 		products = append(products, &product)
 	}
-
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	// variants
+	var productIds []string
+	for _, p := range products {
+		productIds = append(productIds, strconv.FormatInt(p.ID, 10))
+	}
+	variants, err := r.GetVariantsByProductIDs(ctx, productIds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan variants: %w", err)
+	}
+	// variant values
+	var variantIDs []string
+	for _, v := range variants {
+		variantIDs = append(variantIDs, strconv.FormatInt(v.ID, 10))
+	}
+	variantValues, err := r.GetVariantValuesByAttributeID(ctx, variantIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to scan variants value: %w", err)
+
+	}
+	// combine data
+	variantValueMap := utils.ConvertArrToMapIDSlice(variantValues, func(v *model.ProductVariantValue) int64 { return v.AttributeID })
+	for _, v := range variants {
+		v.Values = append(v.Values, variantValueMap[v.ID]...)
+	}
+	variantsMap := utils.ConvertArrToMapIDSlice(variants, func(v *model.ProductVariant) int64 { return v.ProductID })
+
+	for _, p := range products {
+		p.Variant = append(p.Variant, variantsMap[p.ID]...)
 	}
 
 	return products, nil
