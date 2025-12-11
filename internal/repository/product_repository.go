@@ -426,12 +426,35 @@ func (r *ProductRepository) GetAll(ctx context.Context) ([]*model.Product, error
 }
 
 func (r *ProductRepository) DeleteByID(ctx context.Context, id int64) error {
+	// delete variant value
+	queryVariantValues, argsVariantValues, err := r.db.Dialect.Delete("product_variant_value").Where(goqu.Ex{
+		"attribute_id": r.db.Dialect.Select("id").From("product_variant").Where(goqu.Ex{"product_id": id}),
+	}).ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build a delete variant value: %w", err)
+	}
+	_, err = r.db.SQL.ExecContext(ctx, queryVariantValues, argsVariantValues...)
+	if err != nil {
+		return fmt.Errorf("failed to execute delete variant value query: %w", err)
+	}
+	// delete variant
+	queryVariants, argsVariants, err := r.db.Dialect.Delete("product_variant").
+		Where(goqu.Ex{
+			"product_id": id,
+		}).ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build a delete variants: %w", err)
+	}
+	_, err = r.db.SQL.ExecContext(ctx, queryVariants, argsVariants...)
+	if err != nil {
+		return fmt.Errorf("failed to execute delete variants query: %w", err)
+	}
 
-	query, args, err := r.db.Dialect.Delete("product").Where(goqu.Ex{"id": id}).ToSQL()
+	queryProduct, args, err := r.db.Dialect.Delete("product").Where(goqu.Ex{"id": id}).ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build a delete query: %w", err)
 	}
-	result, err := r.db.SQL.ExecContext(ctx, query, args...)
+	result, err := r.db.SQL.ExecContext(ctx, queryProduct, args...)
 	if err != nil {
 		return fmt.Errorf("failed to execute delete query: %w", err)
 	}
