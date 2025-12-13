@@ -42,3 +42,31 @@ func ConvertArrToMapIDSlice[T any](ls []*T, getID func(*T) int64) map[int64][]T 
 	}
 	return mapper
 }
+
+func DerefIntOrDefault(value *int, defaultValue int) int {
+	if value == nil {
+		return defaultValue
+	}
+	return *value
+}
+
+func DerefInt64OrDefault(value *int64, defaultValue int64) int64 {
+	if value == nil {
+		return defaultValue
+	}
+	return *value
+}
+
+func DerefInt16OrDefault(value *int16, defaultValue int16) int16 {
+	if value == nil {
+		return defaultValue
+	}
+	return *value
+}
+
+func DerefFloat64OrDefault(value *float64, defaultValue float64) float64 {
+	if value == nil {
+		return defaultValue
+	}
+	return *value
+}

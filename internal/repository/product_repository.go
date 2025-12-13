@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"simple-template/internal/database"
 	"simple-template/internal/model"
-	"simple-template/internal/utils"
-	"strconv"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -75,6 +73,22 @@ func (r *ProductRepository) Create(ctx context.Context, product *model.Product) 
 		}
 		product.Variant[i].ID = variantID
 
+		// price
+		queryPrice, arg, err := r.db.Dialect.Insert("price").Rows(goqu.Record{
+			"variant_id":     variantID,
+			"price":          variant.Price.Price,
+			"status":         variant.Price.Status,
+			"effective_from": variant.Price.EffectiveFrom,
+		}).ToSQL()
+		if err != nil {
+			return fmt.Errorf("fail price: %w", err)
+		}
+		_, err = r.db.SQL.ExecContext(ctx, queryPrice, arg...)
+		if err != nil {
+			return fmt.Errorf("fail: %w", err)
+		}
+
+		// variant value
 		for _, value := range variant.Values {
 			queryValue, arg, err := r.db.Dialect.Insert("product_variant_value").Rows(goqu.Record{
 				"attribute_id":   variantID,
@@ -132,6 +146,10 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 		goqu.I("product_variant_value.stock_quantity"),
 		goqu.I("product_variant_value.created_at").As("value_created_at"),
 		goqu.I("product_variant_value.updated_at").As("value_updated_at"),
+		// Price
+		goqu.I("price.price"),
+		goqu.I("price.status").As("price_status"),
+		goqu.I("price.effective_from"),
 	).
 		From("product").
 		LeftJoin(
@@ -140,6 +158,8 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 		).
 		LeftJoin(goqu.T("product_variant_value"),
 			goqu.On(goqu.Ex{"product_variant.id": goqu.I("product_variant_value.attribute_id")})).
+		LeftJoin(goqu.T("price"),
+			goqu.On(goqu.Ex{"product_variant.id": goqu.I("price.variant_id"), "price.status": 1})).
 		Where(goqu.Ex{"product.id": id}).
 		Order(goqu.I("product_variant.display_order").Asc(), goqu.I("product_variant_value.display_order").Asc()).
 		ToSQL()
@@ -189,6 +209,10 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 			stockQuantity  sql.NullInt32
 			valueCreatedAt sql.NullTime
 			valueUpdatedAt sql.NullTime
+			// price
+			price         float64
+			priceStatus   int
+			effectiveFrom time.Time
 		)
 
 		err := rows.Scan(
@@ -197,7 +221,7 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 			&productCreatedAt, &productUpdatedAt,
 			&variantID, &variantName, &displayName, &variantDispOrder, &isRequired, &variantProductID,
 			&valueID, &attributeID, &value, &valueDispOrder, &stockQuantity,
-			&valueCreatedAt, &valueUpdatedAt,
+			&valueCreatedAt, &valueUpdatedAt, &price, &priceStatus, &effectiveFrom,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan product row: %w", err)
@@ -236,6 +260,11 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 					IsRequire:    isRequired.Int16,
 					ProductID:    variantProductID.Int64,
 					Values:       []model.ProductVariantValue{},
+					Price: model.ProductVariantPrice{
+						Price:         price,
+						Status:        priceStatus,
+						EffectiveFrom: effectiveFrom,
+					},
 				}
 				variantMap[variantID.Int64] = variant
 				product.Variant = append(product.Variant, *variant)
@@ -312,6 +341,44 @@ func (r *ProductRepository) GetVariantValuesByAttributeID(ctx context.Context, a
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
 	return values, nil
+}
+
+func (r *ProductRepository) GetPriceByVariantID(ctx context.Context, variantIDs []string) ([]*model.Price, error) {
+	query, args, err := r.db.Dialect.
+		Select("id", "variant_id", "price", "status", "effective_from", "created_at", "updated_at").
+		From("price").
+		Where(goqu.Ex{"variant_id": variantIDs}).
+		Order(goqu.I("effective_from").Desc()).
+		ToSQL()
+	if err != nil {
+		return nil, fmt.Errorf("fail to get variant attribute query: %w", err)
+	}
+
+	rows, err := r.db.SQL.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("fail to select price: %w", err)
+	}
+	var prices []*model.Price
+	for rows.Next() {
+		var value model.Price
+		err := rows.Scan(
+			&value.ID,
+			&value.VariantID,
+			&value.Price,
+			&value.Status,
+			&value.EffectiveFrom,
+			&value.CreatedAt,
+			&value.UpdatedAt,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan fail variant value: %w", err)
+		}
+		prices = append(prices, &value)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	return prices, nil
 }
 
 func (r *ProductRepository) GetVariantsByProductIDs(ctx context.Context, productIDs []string) ([]*model.ProductVariant, error) {
@@ -392,52 +459,54 @@ func (r *ProductRepository) GetAll(ctx context.Context) ([]*model.Product, error
 	if err = rows.Err(); err != nil {
 		return nil, fmt.Errorf("error iterating rows: %w", err)
 	}
-	// variants
-	var productIds []string
-	for _, p := range products {
-		productIds = append(productIds, strconv.FormatInt(p.ID, 10))
-	}
-	variants, err := r.GetVariantsByProductIDs(ctx, productIds)
-	if err != nil {
-		return nil, fmt.Errorf("failed to scan variants: %w", err)
-	}
-	// variant values
-	var variantIDs []string
-	for _, v := range variants {
-		variantIDs = append(variantIDs, strconv.FormatInt(v.ID, 10))
-	}
-	variantValues, err := r.GetVariantValuesByAttributeID(ctx, variantIDs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to scan variants value: %w", err)
-
-	}
-	// combine data
-	variantValueMap := utils.ConvertArrToMapIDSlice(variantValues, func(v *model.ProductVariantValue) int64 { return v.AttributeID })
-	for _, v := range variants {
-		v.Values = append(v.Values, variantValueMap[v.ID]...)
-	}
-	variantsMap := utils.ConvertArrToMapIDSlice(variants, func(v *model.ProductVariant) int64 { return v.ProductID })
-
-	for _, p := range products {
-		p.Variant = append(p.Variant, variantsMap[p.ID]...)
-	}
-
 	return products, nil
 }
 
-func (r *ProductRepository) DeleteByID(ctx context.Context, id int64) error {
-	// delete variant value
+func (r *ProductRepository) DeletePriceByProductID(ctx context.Context, id int64) error {
+	// delete price
+	queryPrice, argsPrice, err := r.db.Dialect.Delete("price").Where(goqu.Ex{
+		"variant_id": r.db.Dialect.Select("id").From("product_variant").Where(goqu.Ex{"product_id": id}),
+	}).ToSQL()
+	if err != nil {
+		return fmt.Errorf("failed to build a delete variant value: %w", err)
+	}
+	result, err := r.db.SQL.ExecContext(ctx, queryPrice, argsPrice...)
+	if err != nil {
+		return fmt.Errorf("failed to execute delete variant value query: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("product not found")
+	}
+	return nil
+}
+
+func (r *ProductRepository) DeleteVariantValueByProductID(ctx context.Context, id int64) error {
 	queryVariantValues, argsVariantValues, err := r.db.Dialect.Delete("product_variant_value").Where(goqu.Ex{
 		"attribute_id": r.db.Dialect.Select("id").From("product_variant").Where(goqu.Ex{"product_id": id}),
 	}).ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build a delete variant value: %w", err)
 	}
-	_, err = r.db.SQL.ExecContext(ctx, queryVariantValues, argsVariantValues...)
+	result, err := r.db.SQL.ExecContext(ctx, queryVariantValues, argsVariantValues...)
 	if err != nil {
 		return fmt.Errorf("failed to execute delete variant value query: %w", err)
 	}
-	// delete variant
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("product not found")
+	}
+	return nil
+}
+
+func (r *ProductRepository) DeleteVariantByProductID(ctx context.Context, id int64) error {
 	queryVariants, argsVariants, err := r.db.Dialect.Delete("product_variant").
 		Where(goqu.Ex{
 			"product_id": id,
@@ -445,11 +514,21 @@ func (r *ProductRepository) DeleteByID(ctx context.Context, id int64) error {
 	if err != nil {
 		return fmt.Errorf("failed to build a delete variants: %w", err)
 	}
-	_, err = r.db.SQL.ExecContext(ctx, queryVariants, argsVariants...)
+	result, err := r.db.SQL.ExecContext(ctx, queryVariants, argsVariants...)
 	if err != nil {
-		return fmt.Errorf("failed to execute delete variants query: %w", err)
+		return fmt.Errorf("failed to execute delete variant value query: %w", err)
 	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("product not found")
+	}
+	return nil
+}
 
+func (r *ProductRepository) DeleteProductByID(ctx context.Context, id int64) error {
 	queryProduct, args, err := r.db.Dialect.Delete("product").Where(goqu.Ex{"id": id}).ToSQL()
 	if err != nil {
 		return fmt.Errorf("failed to build a delete query: %w", err)

@@ -30,10 +30,12 @@ type ProductVariant struct {
 	CreatedAt    time.Time             `db:"create_at" json:"created_at"`
 	UpdatedAt    time.Time             `db:"update_at" json:"updated_at"`
 	Values       []ProductVariantValue `db:"-" json:"variants,omitempty"`
+	Price        ProductVariantPrice   `db:"-" json:"price,omitempty"`
 }
-
-func (v *ProductVariant) GetID() int64 {
-	return v.ProductID
+type ProductVariantPrice struct {
+	Price         float64   `db:"price" json:"price"`
+	Status        int       `db:"status" json:"status"`
+	EffectiveFrom time.Time `db:"effective_from" json:"effective_from"`
 }
 
 type ProductVariantValue struct {
@@ -46,27 +48,24 @@ type ProductVariantValue struct {
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 }
 
-func (v *ProductVariantValue) GetID() int64 {
-	return v.AttributeID
-}
-
 type CreateProductVariantValue struct {
-	ID            int64  `json:"id" validate:"required"`
-	AttributeID   int64  `json:"attribute_id" validate:"required"`
+	ID            *int64 `json:"id,omitempty"`
+	AttributeID   *int64 `json:"attribute_id,omitempty"`
 	Value         string `json:"value" validate:"required"`
-	DisplayOrder  int    `json:"display_order"`
-	StockQuantity int    `json:"stock_quantity,omitempty" validate:"required"`
+	DisplayOrder  *int   `json:"display_order,omitempty"`
+	StockQuantity *int   `json:"stock_quantity,omitempty"`
 }
 
 type ProductVariantWithValues struct {
-	ID           int64  `json:"id" validate:"required"`
-	VariantID    int64  `json:"variant_id" validate:"required"`
-	Name         string `json:"name" validate:"required"`
-	DisplayName  string `json:"display_name,omitempty"`
-	DisplayOrder *int64 `json:"display_order,omitempty"`
-	IsRequire    *int16 `json:"is_require"`
-	ProductID    int64  `json:"product_id" validate:"required"`
-	Values       []CreateProductVariantValue
+	ID           *int64                      `json:"id,omitempty"`
+	VariantID    *int64                      `json:"variant_id,omitempty"`
+	Name         string                      `json:"name" validate:"required"`
+	DisplayName  string                      `json:"display_name,omitempty"`
+	DisplayOrder *int64                      `json:"display_order,omitempty"`
+	IsRequire    *int16                      `json:"is_require,omitempty"`
+	ProductID    *int64                      `json:"product_id,omitempty"`
+	Price        *float64                    `json:"price" validate:"required,gt=0"`
+	Values       []CreateProductVariantValue `json:"values,omitempty" validate:"dive"`
 }
 
 type CreateProductRequest struct {
@@ -81,5 +80,5 @@ type CreateProductRequest struct {
 	Material    *string                    `json:"material,omitempty"`
 	Origin      *string                    `json:"origin,omitempty"`
 	ImgUrl      string                     `json:"img_url" validate:"required"`
-	Variants    []ProductVariantWithValues `json:"variants,omitempty"`
+	Variants    []ProductVariantWithValues `json:"variants,omitempty" validate:"dive"`
 }
