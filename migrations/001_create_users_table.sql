@@ -18,15 +18,15 @@ ON DUPLICATE KEY UPDATE name=name;
 
 CREATE TABLE IF NOT EXISTS `customer` (
     `id` bigint NOT NULL AUTO_INCREMENT,
-    `firtname` varchar(225) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `lastname` varchar(225) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `first_name` varchar(225) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+    `last_name` varchar(225) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `email` varchar(225) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-    `address` text COLLATE utf8mb4_unicode_ci,
+    `address` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `phone_number` VARCHAR(32) DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
-    UNIQUE KEY `uq_customer_email` (`email`),
+    UNIQUE KEY `uq_customer_phone` (`phone_number`),
     KEY `idx_created_at` (`created_at`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 

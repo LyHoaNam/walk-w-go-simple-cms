@@ -144,7 +144,6 @@ func (r *UserRepository) Update(ctx context.Context, id int64, updates map[strin
 		return fmt.Errorf("failed to build update query: %w", err)
 	}
 
-	// Thực thi query
 	result, err := r.db.SQL.ExecContext(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("failed to update user: %w", err)

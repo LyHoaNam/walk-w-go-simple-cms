@@ -45,13 +45,15 @@ func main() {
 	// Initialize repositories
 	userRepo := repository.NewUserRepository(db)
 	productRepo := repository.NewProductRepository(db)
+	customerRepo := repository.NewCustomerRepository(db)
 	// Initialize usecases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	productUsecase := usecase.NewProductUsecase(productRepo)
-
+	customerUsecase := usecase.NewCustomerUsecase(customerRepo)
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	productHandler := handler.NewProductHandler(productUsecase)
+	customerHandler := handler.NewCustomerHandler(customerUsecase)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -92,6 +94,15 @@ func main() {
 	product.Get("/:id", productHandler.GetByID)
 	product.Post("/", productHandler.CreateProduct)
 	product.Delete("/:id", productHandler.DeleteProduct)
+
+	// Customer
+	customer := api.Group("/customer")
+	customer.Post("/", customerHandler.Create)
+	customer.Get("/", customerHandler.GetAllCustomers)
+	customer.Get("/:id", customerHandler.GetCustomer)
+	customer.Put("/:id", customerHandler.UpdateCustomers)
+	customer.Delete("/:id", customerHandler.DeleteCustomer)
+
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("🚀 Server starting on %s", addr)
