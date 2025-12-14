@@ -46,15 +46,17 @@ func main() {
 	userRepo := repository.NewUserRepository(db)
 	productRepo := repository.NewProductRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
+	platformRepo := repository.NewPlatformRepository(db)
 	// Initialize usecases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	productUsecase := usecase.NewProductUsecase(productRepo)
 	customerUsecase := usecase.NewCustomerUsecase(customerRepo)
+	platformUsecase := usecase.NewPlatformUsecase(platformRepo)
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	productHandler := handler.NewProductHandler(productUsecase)
 	customerHandler := handler.NewCustomerHandler(customerUsecase)
-
+	platformHanlder := handler.NewPlatformHanlder(platformUsecase)
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "Simple Golang API",
@@ -103,6 +105,9 @@ func main() {
 	customer.Put("/:id", customerHandler.UpdateCustomers)
 	customer.Delete("/:id", customerHandler.DeleteCustomer)
 
+	// platform
+	platform := api.Group("/platform")
+	platform.Get("/", platformHanlder.GetAll)
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("🚀 Server starting on %s", addr)

@@ -1,6 +1,9 @@
 package utils
 
-import "strings"
+import (
+	"database/sql"
+	"strings"
+)
 
 func TrimStringPointer(value *string) *string {
 	if value == nil {
@@ -69,4 +72,11 @@ func DerefFloat64OrDefault(value *float64, defaultValue float64) float64 {
 		return defaultValue
 	}
 	return *value
+}
+
+func NullStringToString(ns sql.NullString) string {
+	if ns.Valid {
+		return ns.String
+	}
+	return ""
 }
