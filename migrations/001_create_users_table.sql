@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS `customer` (
     `address` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
     `phone_number` VARCHAR(32) DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-    `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `updated_at` timestamp NULL DEFAULT   CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_customer_phone` (`phone_number`),
     KEY `idx_created_at` (`created_at`)
@@ -111,17 +111,53 @@ CREATE TABLE IF NOT EXISTS `price` (
     CONSTRAINT `price_ibfk_1` FOREIGN KEY (`variant_id`) REFERENCES `product_variant` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
+
+CREATE TABLE IF NOT EXISTS `retail_stores` (
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `phone_number` VARCHAR(32) DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `platform` (
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `name` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+    `api_endpoint` TEXT DEFAULT NULL,
+    `feature_struct` TEXT DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `payment_methods` (
+    `id` BIGINT PRIMARY KEY AUTO_INCREMENT,
+    `name` VARCHAR(50) NOT NULL,
+    `code` VARCHAR(20) UNIQUE NOT NULL,
+    `description` TEXT,
+    `is_active` BOOLEAN DEFAULT TRUE,
+    `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS `orders` (
     `id` bigint NOT NULL AUTO_INCREMENT,
     `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=pending, 2=paid, 3=shipped, 4=completed, 5=canceled',
     `payment_status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=unpaid, 2=paid, 3=refunded',
     `customer_id` bigint DEFAULT NULL,
+    `platform_id` bigint DEFAULT NULL,
+    `payment_id` bigint DEFAULT NULL,
+    `retail_stores_id` bigint DEFAULT NULL,
     `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_created_at` (`created_at`),
     KEY `customer_id` (`customer_id`),
-    CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`id`)
+    CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`id`),
+    CONSTRAINT `platform_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `platform` (`id`),
+    CONSTRAINT `store_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `retail_stores` (`id`),
+    CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`payment_id`) REFERENCES `payment_methods` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `order_items` (
@@ -152,6 +188,38 @@ INSERT INTO `category` (`name`) VALUES
     ('Shorts'),
     ('Skirt')
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `retail_stores` (`name`, `phone_number`)
+VALUES
+  ('Downtown Store', '0123456789'),
+  ('Uptown Store', '0987654321'),
+  ('Mall Kiosk', NULL)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+
+INSERT INTO `platform` (`id`, `name`, `api_endpoint`, `feature_struct`)
+VALUES
+  (1, 'shopee', 'https://partner.shopeemobile.com/api/v2/', '{"commission": "2.5% per order"}'),
+  (2, 'lazada', 'https://open.lazada.com/api/', '{"commission": "2.0% per order"}'),
+  (3, 'tiktok shop', 'https://open-api.tiktokglobalshop.com/', '{"commission": "3.0% per order"}'),
+  (4, 'offline', NULL, '{"commission": "0%"}')
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `api_endpoint` = VALUES(`api_endpoint`),
+  `feature_struct` = VALUES(`feature_struct`);
+
+INSERT INTO `payment_methods` (`id`, `name`, `code`, `description`, `is_active`)
+VALUES
+  (1, 'Cash', 'CASH', 'Cash payment at store', TRUE),
+  (2, 'Bank Transfer', 'BANK', 'Bank transfer payment', TRUE),
+  (3, 'ShopeePay', 'SHOPEEPAY', 'ShopeePay e-wallet', TRUE),
+  (4, 'Lazada Wallet', 'LAZADAWALLET', 'Lazada Wallet payment', TRUE),
+  (5, 'TikTokPay', 'TIKTOKPAY', 'TikTok Shop payment', TRUE),
+  (6, 'Credit Card', 'CREDITCARD', 'Credit or debit card payment', TRUE)
+ON DUPLICATE KEY UPDATE
+  `name` = VALUES(`name`),
+  `code` = VALUES(`code`),
+  `description` = VALUES(`description`),
+  `is_active` = VALUES(`is_active`);
 
 INSERT INTO `product` (
   `name`,
