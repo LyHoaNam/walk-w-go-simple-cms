@@ -47,16 +47,19 @@ func main() {
 	productRepo := repository.NewProductRepository(db)
 	customerRepo := repository.NewCustomerRepository(db)
 	platformRepo := repository.NewPlatformRepository(db)
+	retailStoreRepo := repository.NewRetailStoreRepository(db)
 	// Initialize usecases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	productUsecase := usecase.NewProductUsecase(productRepo)
 	customerUsecase := usecase.NewCustomerUsecase(customerRepo)
 	platformUsecase := usecase.NewPlatformUsecase(platformRepo)
+	retailStoreUsecase := usecase.NewRetailStoreUsecase(retailStoreRepo)
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	productHandler := handler.NewProductHandler(productUsecase)
 	customerHandler := handler.NewCustomerHandler(customerUsecase)
-	platformHanlder := handler.NewPlatformHanlder(platformUsecase)
+	platformHandler := handler.NewPlatformHanlder(platformUsecase)
+	retailStoreHandler := handler.NewRetailStoreHanlder(retailStoreUsecase)
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "Simple Golang API",
@@ -107,7 +110,10 @@ func main() {
 
 	// platform
 	platform := api.Group("/platform")
-	platform.Get("/", platformHanlder.GetAll)
+	platform.Get("/", platformHandler.GetAll)
+	// retail store
+	retailStore := api.Group("/retail-store")
+	retailStore.Get("/", retailStoreHandler.GetAll)
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("🚀 Server starting on %s", addr)
