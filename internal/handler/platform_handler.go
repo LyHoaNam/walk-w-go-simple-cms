@@ -11,7 +11,7 @@ type PlatformHandler struct {
 	platformUsecase *usecase.PlatformUsecase
 }
 
-func NewPlatformHanlder(platformUsecase *usecase.PlatformUsecase) *PlatformHandler {
+func NewPlatformHandler(platformUsecase *usecase.PlatformUsecase) *PlatformHandler {
 	return &PlatformHandler{
 		platformUsecase: platformUsecase,
 	}

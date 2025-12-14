@@ -48,18 +48,21 @@ func main() {
 	customerRepo := repository.NewCustomerRepository(db)
 	platformRepo := repository.NewPlatformRepository(db)
 	retailStoreRepo := repository.NewRetailStoreRepository(db)
+	paymentMethodsRepo := repository.NewPaymentMethodsRepository(db)
 	// Initialize usecases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	productUsecase := usecase.NewProductUsecase(productRepo)
 	customerUsecase := usecase.NewCustomerUsecase(customerRepo)
 	platformUsecase := usecase.NewPlatformUsecase(platformRepo)
 	retailStoreUsecase := usecase.NewRetailStoreUsecase(retailStoreRepo)
+	paymentMethodsUsecase := usecase.NewPaymentMethodsUsecase(paymentMethodsRepo)
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	productHandler := handler.NewProductHandler(productUsecase)
 	customerHandler := handler.NewCustomerHandler(customerUsecase)
-	platformHandler := handler.NewPlatformHanlder(platformUsecase)
-	retailStoreHandler := handler.NewRetailStoreHanlder(retailStoreUsecase)
+	platformHandler := handler.NewPlatformHandler(platformUsecase)
+	retailStoreHandler := handler.NewRetailStoreHandler(retailStoreUsecase)
+	paymentMethodsHandler := handler.NewPaymentMethodsHandler(paymentMethodsUsecase)
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "Simple Golang API",
@@ -114,6 +117,9 @@ func main() {
 	// retail store
 	retailStore := api.Group("/retail-store")
 	retailStore.Get("/", retailStoreHandler.GetAll)
+	// payment methods
+	paymentMethods := api.Group("/payment-methods")
+	paymentMethods.Get("/", paymentMethodsHandler.GetAll)
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("🚀 Server starting on %s", addr)
