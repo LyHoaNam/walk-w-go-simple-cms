@@ -49,6 +49,8 @@ func main() {
 	platformRepo := repository.NewPlatformRepository(db)
 	retailStoreRepo := repository.NewRetailStoreRepository(db)
 	paymentMethodsRepo := repository.NewPaymentMethodsRepository(db)
+	ordersRepo := repository.NewOrdersRepository(db)
+
 	// Initialize usecases
 	userUsecase := usecase.NewUserUsecase(userRepo)
 	productUsecase := usecase.NewProductUsecase(productRepo)
@@ -56,6 +58,8 @@ func main() {
 	platformUsecase := usecase.NewPlatformUsecase(platformRepo)
 	retailStoreUsecase := usecase.NewRetailStoreUsecase(retailStoreRepo)
 	paymentMethodsUsecase := usecase.NewPaymentMethodsUsecase(paymentMethodsRepo)
+	ordersUsecase := usecase.NewOrderUseCase(ordersRepo)
+
 	// Initialize handlers
 	userHandler := handler.NewUserHandler(userUsecase)
 	productHandler := handler.NewProductHandler(productUsecase)
@@ -63,6 +67,7 @@ func main() {
 	platformHandler := handler.NewPlatformHandler(platformUsecase)
 	retailStoreHandler := handler.NewRetailStoreHandler(retailStoreUsecase)
 	paymentMethodsHandler := handler.NewPaymentMethodsHandler(paymentMethodsUsecase)
+	ordersHandler := handler.NewOrderHandler(ordersUsecase)
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
 		AppName: "Simple Golang API",
@@ -120,6 +125,9 @@ func main() {
 	// payment methods
 	paymentMethods := api.Group("/payment-methods")
 	paymentMethods.Get("/", paymentMethodsHandler.GetAll)
+	// orders
+	orders := api.Group("/orders")
+	orders.Post("/", ordersHandler.Create)
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("🚀 Server starting on %s", addr)

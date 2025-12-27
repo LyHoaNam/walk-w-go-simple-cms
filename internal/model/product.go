@@ -33,6 +33,7 @@ type ProductVariant struct {
 	Price        ProductVariantPrice   `db:"-" json:"price,omitempty"`
 }
 type ProductVariantPrice struct {
+	ID            int64     `db:"id" json:"id"`
 	Price         float64   `db:"price" json:"price"`
 	Status        int       `db:"status" json:"status"`
 	EffectiveFrom time.Time `db:"effective_from" json:"effective_from"`
@@ -81,4 +82,14 @@ type CreateProductRequest struct {
 	Origin      *string                    `json:"origin,omitempty"`
 	ImgUrl      string                     `json:"img_url" validate:"required"`
 	Variants    []ProductVariantWithValues `json:"variants,omitempty" validate:"dive"`
+}
+
+type OrdersProduct struct {
+	PriceID        int64
+	VariantID      int64
+	VariantValueID int64
+	StockQuantity  int
+	Name           string
+	Value          string
+	Status         int32
 }

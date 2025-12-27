@@ -147,6 +147,7 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 		goqu.I("product_variant_value.created_at").As("value_created_at"),
 		goqu.I("product_variant_value.updated_at").As("value_updated_at"),
 		// Price
+		goqu.I("price.id"),
 		goqu.I("price.price"),
 		goqu.I("price.status").As("price_status"),
 		goqu.I("price.effective_from"),
@@ -210,6 +211,7 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 			valueCreatedAt sql.NullTime
 			valueUpdatedAt sql.NullTime
 			// price
+			priceID       int64
 			price         float64
 			priceStatus   int
 			effectiveFrom time.Time
@@ -221,7 +223,7 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 			&productCreatedAt, &productUpdatedAt,
 			&variantID, &variantName, &displayName, &variantDispOrder, &isRequired, &variantProductID,
 			&valueID, &attributeID, &value, &valueDispOrder, &stockQuantity,
-			&valueCreatedAt, &valueUpdatedAt, &price, &priceStatus, &effectiveFrom,
+			&valueCreatedAt, &valueUpdatedAt, &priceID, &price, &priceStatus, &effectiveFrom,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan product row: %w", err)
@@ -261,6 +263,7 @@ func (r *ProductRepository) GetByID(ctx context.Context, id int64) (*model.Produ
 					ProductID:    variantProductID.Int64,
 					Values:       []model.ProductVariantValue{},
 					Price: model.ProductVariantPrice{
+						ID:            priceID,
 						Price:         price,
 						Status:        priceStatus,
 						EffectiveFrom: effectiveFrom,

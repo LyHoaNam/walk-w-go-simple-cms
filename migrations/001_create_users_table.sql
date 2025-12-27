@@ -143,7 +143,6 @@ CREATE TABLE IF NOT EXISTS `payment_methods` (
 
 CREATE TABLE IF NOT EXISTS `orders` (
     `id` bigint NOT NULL AUTO_INCREMENT,
-    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=pending, 2=paid, 3=shipped, 4=completed, 5=canceled',
     `payment_status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=unpaid, 2=paid, 3=refunded',
     `customer_id` bigint DEFAULT NULL,
     `platform_id` bigint DEFAULT NULL,
@@ -155,15 +154,28 @@ CREATE TABLE IF NOT EXISTS `orders` (
     KEY `idx_created_at` (`created_at`),
     KEY `customer_id` (`customer_id`),
     CONSTRAINT `orders_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `customer` (`id`),
-    CONSTRAINT `platform_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `platform` (`id`),
-    CONSTRAINT `store_ibfk_1` FOREIGN KEY (`customer_id`) REFERENCES `retail_stores` (`id`),
+    CONSTRAINT `platform_ibfk_1` FOREIGN KEY (`platform_id`) REFERENCES `platform` (`id`),
+    CONSTRAINT `store_ibfk_1` FOREIGN KEY (`retail_stores_id`) REFERENCES `retail_stores` (`id`),
     CONSTRAINT `payment_ibfk_1` FOREIGN KEY (`payment_id`) REFERENCES `payment_methods` (`id`)
+) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `order_status` (
+    `id` bigint NOT NULL AUTO_INCREMENT,
+    `status` TINYINT NOT NULL DEFAULT 1 COMMENT '1=pending, 2=paid, 3=shipped, 4=completed, 5=canceled',
+    `description` text DEFAULT NULL,
+    `order_id` bigint DEFAULT NULL,
+    `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_created_at` (`created_at`),
+    CONSTRAINT `orders_status_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `order_items` (
     `id` bigint NOT NULL AUTO_INCREMENT,
     `order_id` bigint NOT NULL,
     `price_id` bigint NOT NULL,
+    `variant_value_id` bigint NOT NULL,
     `quantity` int NOT NULL,
     `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
     `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -171,8 +183,10 @@ CREATE TABLE IF NOT EXISTS `order_items` (
     KEY `idx_created_at` (`created_at`),
     KEY `order_id` (`order_id`),
     KEY `price_id` (`price_id`),
+    KEY `variant_value_id` (`variant_value_id`),
     CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
-    CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`price_id`) REFERENCES `price` (`id`)
+    CONSTRAINT `order_items_ibfk_2` FOREIGN KEY (`price_id`) REFERENCES `price` (`id`),
+    CONSTRAINT `order_item_pvvfk_2` FOREIGN KEY (`variant_value_id`) REFERENCES `product_variant_value` (`id`)
 ) ENGINE = InnoDB DEFAULT CHARSET = utf8mb4 COLLATE = utf8mb4_unicode_ci;
 
 -- Insert default fashion categories
@@ -271,6 +285,19 @@ VALUES
 
 INSERT INTO price (
   variant_id, price, compare_at_price, cost_price, status, effective_from, effective_to
-) VALUES (
-  1, 19.99, 24.99, 8.50, 1, CURRENT_TIMESTAMP, NULL
-);
+) VALUES (1, 19.99, 24.99, 8.50, 1, CURRENT_TIMESTAMP, NULL),
+(2, 29.99, 14.99, 18.50, 1, CURRENT_TIMESTAMP, NULL),
+(3, 49.99, 34.99, 12.50, 1, CURRENT_TIMESTAMP, NULL);
+
+INSERT INTO customer (first_name, last_name, email, address, phone_number)
+VALUES
+  ('Alice', 'Nguyen', 'alice.nguyen@example.com', '123 Main St, Hanoi', '0901234567'),
+  ('Bob', 'Tran', 'bob.tran@example.com', '456 Le Loi, Ho Chi Minh City', '0912345678'),
+  ('Carol', 'Pham', 'carol.pham@example.com', '789 Nguyen Hue, Da Nang', '0923456789'),
+  ('David', 'Le', 'david.le@example.com', '321 Tran Phu, Can Tho', '0934567890'),
+  ('Eve', 'Hoang', 'eve.hoang@example.com', '654 Bach Dang, Hai Phong', '0945678901')
+ON DUPLICATE KEY UPDATE
+  first_name = VALUES(first_name),
+  last_name = VALUES(last_name),
+  email = VALUES(email),
+  address = VALUES(address);

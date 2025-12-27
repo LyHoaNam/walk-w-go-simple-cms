@@ -148,6 +148,7 @@ func (u *ProductUsecase) GetAll(ctx context.Context) ([]*model.Product, error) {
 	for _, v := range variants {
 		v.Values = append(v.Values, variantValueMap[v.ID]...)
 		if priceList, exists := pricesMap[v.ID]; exists && len(priceList) > 0 {
+			v.Price.ID = priceList[0].ID
 			v.Price.Price = priceList[0].Price
 			v.Price.EffectiveFrom = priceList[0].EffectiveFrom
 			v.Price.Status = int(priceList[0].Status)
