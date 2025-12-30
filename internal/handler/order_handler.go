@@ -35,3 +35,11 @@ func (h *OrderHandler) Create(c *fiber.Ctx) error {
 
 	return response.Success(c, orders, "success")
 }
+
+func (h *OrderHandler) GetAll(c *fiber.Ctx) error {
+	orders, err := h.orderUsecase.GetOrdersPage(c.Context())
+	if err != nil {
+		return response.BadRequest(c, "Failed to fetch", err)
+	}
+	return response.Success(c, orders, "orders retrieved successfully")
+}

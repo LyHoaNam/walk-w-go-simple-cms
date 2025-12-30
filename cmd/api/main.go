@@ -127,7 +127,9 @@ func main() {
 	paymentMethods.Get("/", paymentMethodsHandler.GetAll)
 	// orders
 	orders := api.Group("/orders")
+	orders.Get("/", ordersHandler.GetAll)
 	orders.Post("/", ordersHandler.Create)
+
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 	log.Printf("🚀 Server starting on %s", addr)

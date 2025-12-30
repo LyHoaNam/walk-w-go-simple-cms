@@ -121,3 +121,12 @@ func (u *OrderUsecase) validateCreateOrder(ctx context.Context, req *model.Creat
 	}
 	return nil
 }
+
+func (u *OrderUsecase) GetOrdersPage(ctx context.Context) ([]*model.OrdersPage, error) {
+	orders, err := u.orderRepo.GetOrdersPage(ctx)
+
+	if err != nil {
+		return nil, err
+	}
+	return orders, nil
+}

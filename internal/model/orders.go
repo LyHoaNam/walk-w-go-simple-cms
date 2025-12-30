@@ -37,3 +37,15 @@ type CreateOrderItems struct {
 	ProductVariantID int64 `json:"product_variant_id" validate:"required"`
 	PriceID          int64 `json:"price_id" validate:"required"`
 }
+
+type OrdersPage struct {
+	ID            int64
+	PaymentStatus int8
+	TotalAmount   float64
+	CreatedAt     time.Time
+	FirstName     string
+	LastName      string
+	Platform      string
+	PaymentMethod string
+	OrderStatus   int8
+}
