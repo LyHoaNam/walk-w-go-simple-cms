@@ -49,7 +49,10 @@ func (r *OrdersRepository) Create(ctx context.Context, tx *sql.Tx, orders *model
 	return orders, nil
 }
 
-func (r *OrdersRepository) CreateItems(ctx context.Context, tx *sql.Tx, orderItems []*model.OrderItems) ([]*model.OrderItems, error) {
+func (r *OrdersRepository) CreateItems(
+	ctx context.Context,
+	tx *sql.Tx, orderItems []*model.OrderItems) ([]*model.OrderItems, error) {
+
 	itemRecords := make([]interface{}, 0, len(orderItems))
 	for _, item := range orderItems {
 		itemRecords = append(itemRecords, goqu.Record{
@@ -69,7 +72,6 @@ func (r *OrdersRepository) CreateItems(ctx context.Context, tx *sql.Tx, orderIte
 	if err != nil {
 		return nil, fmt.Errorf("failed to insert order item: %w", err)
 	}
-
 	firstItemID, err := result.LastInsertId()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get last order item: %w", err)
@@ -79,6 +81,35 @@ func (r *OrdersRepository) CreateItems(ctx context.Context, tx *sql.Tx, orderIte
 		orderItems[i].ID = firstItemID + int64(i)
 	}
 	return orderItems, nil
+}
+
+func (r *OrdersRepository) CreateOrderStatus(
+	ctx context.Context,
+	tx *sql.Tx,
+	OrderStatus *model.OrderStatus,
+) error {
+
+	query, args, err := r.db.Dialect.
+		Insert("order_status").Rows(
+		goqu.Record{
+			"status":      OrderStatus.Status,
+			"description": OrderStatus.Description,
+			"order_id":    OrderStatus.OrderID,
+		}).ToSQL()
+
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	result, err := tx.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to create order status: %w", err)
+	}
+
+	if _, err := result.LastInsertId(); err != nil {
+		return fmt.Errorf("failed to get last insert id: %w", err)
+	}
+	return nil
 }
 
 func (r *OrdersRepository) GetStocks(

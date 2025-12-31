@@ -39,13 +39,29 @@ type CreateOrderItems struct {
 }
 
 type OrdersPage struct {
-	ID            int64
-	PaymentStatus int8
+	ID            int64 `db:"id" json:"id"`
+	PaymentStatus int8  `db:"id" json:"status"`
 	TotalAmount   float64
-	CreatedAt     time.Time
-	FirstName     string
-	LastName      string
+	CreatedAt     time.Time `db:"created_at" json:"created_at"`
+	FirstName     string    `db:"first_name" json:"first_name"`
+	LastName      string    `db:"last_name" json:"last_name"`
 	Platform      string
 	PaymentMethod string
 	OrderStatus   int8
+}
+
+type OrderStatus struct {
+	ID          int64     `db:"id" json:"id"`
+	Status      int8      `db:"status" json:"status"`
+	Description string    `db:"description" json:"description"`
+	OrderID     int64     `db:"order_id" json:"order_id"`
+	CreatedAt   time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
+}
+
+type CreateOrderStatus struct {
+	ID          int64  `db:"id" json:"id"`
+	Status      int8   `json:"status" validate:"required"`
+	Description string `json:"description" validate:"required"`
+	OrderID     int64  `json:"order_id" validate:"required"`
 }

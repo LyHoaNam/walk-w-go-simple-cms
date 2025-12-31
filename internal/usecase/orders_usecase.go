@@ -70,6 +70,13 @@ func (u *OrderUsecase) CreateOrders(ctx context.Context, req *model.CreateOrders
 	if err := u.orderRepo.ReduceStocksBatch(ctx, tx, stockUpdates); err != nil {
 		return nil, fmt.Errorf("failed to reduce stocks: %w", err)
 	}
+	if err := u.orderRepo.CreateOrderStatus(ctx, tx, &model.OrderStatus{
+		Status:      1,
+		Description: "created new orders",
+		OrderID:     orders.ID,
+	}); err != nil {
+		return nil, fmt.Errorf("failed to create order status: %w", err)
+	}
 
 	// Commit transaction - all operations succeeded atomically
 	if err := tx.Commit(); err != nil {
