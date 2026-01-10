@@ -308,3 +308,57 @@ func (r *OrdersRepository) GetOrdersPage(ctx context.Context) ([]*model.OrdersPa
 
 	return orders, nil
 }
+
+func (r *OrdersRepository) UpdateOrderStatus(ctx context.Context, status int8, statusID int64) error {
+	query, args, err := r.db.Dialect.Update("order_status").Set(goqu.Record{
+		"status": status,
+	}).Where(goqu.Ex{"id": statusID}).ToSQL()
+
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	result, err := r.db.SQL.ExecContext(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("failed to update order status: %w", err)
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+
+	if rowsAffected == 0 {
+		return fmt.Errorf("order status not found")
+	}
+
+	return nil
+}
+
+func (r *OrdersRepository) GetLatestStatus(ctx context.Context, orderStatusID int64) (model.OrderStatus, error) {
+	query, args, err := r.db.Dialect.
+		Select("id", "status", "description", "order_id", "created_at").
+		From("order_status").
+		Where(goqu.Ex{
+			"order_id": orderStatusID,
+		}).
+		Order(goqu.I("created_at").Desc()).
+		Limit(1).
+		ToSQL()
+
+	if err != nil {
+		return model.OrderStatus{}, fmt.Errorf("failed to build the select query: %w", err)
+	}
+	var orderStatus model.OrderStatus
+	err = r.db.SQL.QueryRowContext(ctx, query, args...).Scan(
+		&orderStatus.ID,
+		&orderStatus.Status,
+		&orderStatus.Description,
+		&orderStatus.OrderID,
+		&orderStatus.CreatedAt,
+	)
+	if err != nil {
+		return model.OrderStatus{}, fmt.Errorf("failed to get latest status: %w", err)
+	}
+	return orderStatus, nil
+}

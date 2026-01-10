@@ -129,6 +129,7 @@ func main() {
 	orders := api.Group("/orders")
 	orders.Get("/", ordersHandler.GetAll)
 	orders.Post("/", ordersHandler.Create)
+	orders.Put("/:id", ordersHandler.UpdateStatus)
 
 	// Start server
 	addr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)

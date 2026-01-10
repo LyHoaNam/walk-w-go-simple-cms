@@ -65,3 +65,17 @@ type CreateOrderStatus struct {
 	Description string `json:"description" validate:"required"`
 	OrderID     int64  `json:"order_id" validate:"required"`
 }
+
+type OrderStatusItem int
+
+const (
+	OrderStatusPending OrderStatusItem = iota + 1
+	OrderStatusPaid
+	OrderStatusShipped
+	OrderStatusCompleted
+	OrderStatusCanceled
+)
+
+type UpdateOrderStatus struct {
+	Status int8 `json:"status" validate:"required"`
+}

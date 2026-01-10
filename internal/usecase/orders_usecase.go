@@ -137,3 +137,107 @@ func (u *OrderUsecase) GetOrdersPage(ctx context.Context) ([]*model.OrdersPage, 
 	}
 	return orders, nil
 }
+
+func (u *OrderUsecase) UpdateOrderStatus(
+	ctx context.Context,
+	status int8,
+	orderID int64) error {
+
+	if status < 1 || status > 5 {
+		return fmt.Errorf("invalid status: must be between 1-5")
+	}
+
+	// Start transaction for status update
+	tx, err := u.orderRepo.BeginTx(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+	defer tx.Rollback()
+
+	latestStatus, err := u.orderRepo.GetLatestStatus(ctx, orderID)
+	if err != nil {
+		return err
+	}
+
+	// Validate status transition
+	if err := u.validateStatusTransition(latestStatus.Status, status); err != nil {
+		return err
+	}
+
+	// Create new order status record
+	newStatus := &model.OrderStatus{
+		Status:      status,
+		Description: u.getStatusDescription(status),
+		OrderID:     orderID,
+	}
+
+	if err := u.orderRepo.CreateOrderStatus(ctx, tx, newStatus); err != nil {
+		return fmt.Errorf("failed to create order status: %w", err)
+	}
+
+	// Commit transaction
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+
+	return nil
+}
+
+// validateStatusTransition checks if status transition is allowed
+func (u *OrderUsecase) validateStatusTransition(currentStatus, newStatus int8) error {
+	// Can't transition to the same status
+	if currentStatus == newStatus {
+		return fmt.Errorf("order is already in status %d", currentStatus)
+	}
+
+	// Define valid transitions map
+	validTransitions := map[int8][]int8{
+		int8(model.OrderStatusPending): {
+			int8(model.OrderStatusPaid),
+			int8(model.OrderStatusCanceled),
+		},
+		int8(model.OrderStatusPaid): {
+			int8(model.OrderStatusShipped),
+			int8(model.OrderStatusCanceled),
+		},
+		int8(model.OrderStatusShipped): {
+			int8(model.OrderStatusCompleted),
+			int8(model.OrderStatusCanceled),
+		},
+		int8(model.OrderStatusCompleted): {}, // Final state - no transitions allowed
+		int8(model.OrderStatusCanceled):  {}, // Final state - no transitions allowed
+	}
+
+	allowedStatuses, exists := validTransitions[currentStatus]
+	if !exists {
+		return fmt.Errorf("unknown current status: %d", currentStatus)
+	}
+
+	// Check if new status is in allowed transitions
+	for _, allowed := range allowedStatuses {
+		if allowed == newStatus {
+			return nil // Valid transition
+		}
+	}
+
+	// Invalid transition
+	return fmt.Errorf("cannot transition from status %d to %d", currentStatus, newStatus)
+}
+
+// getStatusDescription returns description based on status
+func (u *OrderUsecase) getStatusDescription(status int8) string {
+	switch status {
+	case int8(model.OrderStatusPending):
+		return "Order is pending payment"
+	case int8(model.OrderStatusPaid):
+		return "Payment confirmed successfully"
+	case int8(model.OrderStatusShipped):
+		return "Order has been shipped"
+	case int8(model.OrderStatusCompleted):
+		return "Order completed and delivered"
+	case int8(model.OrderStatusCanceled):
+		return "Order has been canceled"
+	default:
+		return "Status updated"
+	}
+}

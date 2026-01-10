@@ -4,6 +4,7 @@ import (
 	"simple-template/internal/model"
 	"simple-template/internal/usecase"
 	"simple-template/pkg/response"
+	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -42,4 +43,24 @@ func (h *OrderHandler) GetAll(c *fiber.Ctx) error {
 		return response.BadRequest(c, "Failed to fetch", err)
 	}
 	return response.Success(c, orders, "orders retrieved successfully")
+}
+
+func (h *OrderHandler) UpdateStatus(c *fiber.Ctx) error {
+	idStr := c.Params("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		return response.BadRequest(c, "invalid order ID", err)
+	}
+
+	var req model.UpdateOrderStatus
+	if err := c.BodyParser(&req); err != nil {
+		return response.BadRequest(c, "invalid request", err)
+	}
+
+	err = h.orderUsecase.UpdateOrderStatus(c.Context(), req.Status, id)
+	if err != nil {
+		return response.BadRequest(c, "failed to update order status", err)
+	}
+
+	return response.Success(c, nil, "order status updated successfully")
 }
