@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"simple-template/internal/database"
 	"simple-template/internal/model"
+	"simple-template/pkg/pagination"
 	"time"
 
 	"github.com/doug-martin/goqu/v9"
@@ -423,33 +424,53 @@ func (r *ProductRepository) GetVariantsByProductIDs(ctx context.Context, product
 	return variants, nil
 }
 
-func (r *ProductRepository) GetAll(ctx context.Context) ([]*model.Product, error) {
-	query, args, err := r.db.Dialect.
-		Select("id",
-			"name",
-			"sku",
-			"description",
-			"category_id",
-			"created_at",
-			"updated_at").From("product").Order(goqu.I("created_at").Desc()).ToSQL()
+func (r *ProductRepository) GetAllPaginated(
+	ctx context.Context,
+	cursor string,
+	limit int,
+	order string,
+	sortBy string,
+) ([]*model.Product, error) {
 
+	// Build base query
+	query := r.db.Dialect.
+		Select("id", "name", "sku", "status", "description", "dimension",
+			"weight", "brand", "material", "origin", "img_url",
+			"category_id", "created_at", "updated_at").
+		From("product")
+
+	// Apply cursor pagination logic using generic query builder
+	queryBuilder := pagination.NewQueryBuilder()
+	query, err := queryBuilder.ApplyCursorPagination(query, cursor, limit, order, sortBy)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply cursor pagination: %w", err)
+	}
+
+	queryStr, args, err := query.ToSQL()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build select query: %w", err)
 	}
-
-	rows, err := r.db.SQL.QueryContext(ctx, query, args...)
+	rows, err := r.db.SQL.QueryContext(ctx, queryStr, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get products: %w", err)
 	}
+	defer rows.Close()
 
 	var products []*model.Product
 	for rows.Next() {
 		var product model.Product
 		err := rows.Scan(
 			&product.ID,
-			&product.SKU,
 			&product.Name,
+			&product.SKU,
+			&product.Status,
 			&product.Description,
+			&product.Dimension,
+			&product.Weight,
+			&product.Brand,
+			&product.Material,
+			&product.Origin,
+			&product.ImgUrl,
 			&product.CategoryID,
 			&product.CreatedAt,
 			&product.UpdatedAt,

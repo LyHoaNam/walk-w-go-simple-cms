@@ -7,18 +7,21 @@ import (
 	"simple-template/internal/model"
 	"simple-template/internal/repository"
 	"simple-template/internal/utils"
+	"simple-template/pkg/pagination"
 	"strconv"
 	"strings"
 	"time"
 )
 
 type ProductUsecase struct {
-	productRepo *repository.ProductRepository
+	productRepo       *repository.ProductRepository
+	paginationService *pagination.Service
 }
 
 func NewProductUsecase(productRepo *repository.ProductRepository) *ProductUsecase {
 	return &ProductUsecase{
-		productRepo: productRepo,
+		productRepo:       productRepo,
+		paginationService: pagination.NewService(),
 	}
 }
 
@@ -111,11 +114,21 @@ func (u *ProductUsecase) GetByID(ctx context.Context, id int64) (*model.Product,
 	return product, nil
 }
 
-func (u *ProductUsecase) GetAll(ctx context.Context) ([]*model.Product, error) {
-	products, err := u.productRepo.GetAll(ctx)
+func (u *ProductUsecase) GetAll(ctx context.Context, req *pagination.Request) (*pagination.Response, error) {
+
+	u.paginationService.ValidateAndNormalize(req)
+
+	// Determine navigation direction (business logic)
+	cursor, effectiveOrder := u.paginationService.GetNavigationParams(*req)
+
+	// Fetch products (limit + 1 to check for next/prev page)
+	fetchLimit := u.paginationService.CalculateFetchLimit(req.Limit)
+
+	products, err := u.productRepo.GetAllPaginated(ctx, cursor, fetchLimit, effectiveOrder, req.SortBy)
 	if err != nil {
 		return nil, err
 	}
+
 	// variants
 	var productIds []string
 	for _, p := range products {
@@ -155,12 +168,24 @@ func (u *ProductUsecase) GetAll(ctx context.Context) ([]*model.Product, error) {
 		}
 	}
 	variantsMap := utils.ConvertArrToMapIDSlice(variants, func(v *model.ProductVariant) int64 { return v.ProductID })
+	// Convert []*model.Product to []interface{} for pagination service
+	items := make([]interface{}, len(products))
 
-	for _, p := range products {
+	for i, p := range products {
 		p.Variant = append(p.Variant, variantsMap[p.ID]...)
+		items[i] = p
 	}
 
-	return products, nil
+	response := u.paginationService.BuildResponse(
+		items,
+		req,
+		func(p interface{}) (time.Time, int64) {
+			product := p.(*model.Product)
+			return product.CreatedAt, product.ID
+		},
+	)
+
+	return &response, nil
 }
 
 func (u *ProductUsecase) Delete(ctx context.Context, id int64) error {
