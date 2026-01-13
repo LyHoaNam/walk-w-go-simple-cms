@@ -3,6 +3,7 @@ package handler
 import (
 	"simple-template/internal/model"
 	"simple-template/internal/usecase"
+	"simple-template/pkg/pagination"
 	"simple-template/pkg/response"
 	"strconv"
 
@@ -38,7 +39,15 @@ func (h *OrderHandler) Create(c *fiber.Ctx) error {
 }
 
 func (h *OrderHandler) GetAll(c *fiber.Ctx) error {
-	orders, err := h.orderUsecase.GetOrdersPage(c.Context())
+	var req pagination.Request
+	if err := c.QueryParser(&req); err != nil {
+		return response.BadRequest(c, "invalid query parameters", err)
+	}
+
+	if err := validate.Struct(req); err != nil {
+		return response.BadRequest(c, "validation failed", err)
+	}
+	orders, err := h.orderUsecase.GetOrdersPaginated(c.Context(), &req)
 	if err != nil {
 		return response.BadRequest(c, "Failed to fetch", err)
 	}

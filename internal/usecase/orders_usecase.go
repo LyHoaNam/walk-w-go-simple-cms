@@ -5,15 +5,19 @@ import (
 	"fmt"
 	"simple-template/internal/model"
 	"simple-template/internal/repository"
+	"simple-template/pkg/pagination"
+	"time"
 )
 
 type OrderUsecase struct {
-	orderRepo *repository.OrdersRepository
+	orderRepo         *repository.OrdersRepository
+	paginationService *pagination.Service
 }
 
 func NewOrderUseCase(orderRepo *repository.OrdersRepository) *OrderUsecase {
 	return &OrderUsecase{
-		orderRepo: orderRepo,
+		orderRepo:         orderRepo,
+		paginationService: pagination.NewService(),
 	}
 }
 
@@ -129,13 +133,32 @@ func (u *OrderUsecase) validateCreateOrder(ctx context.Context, req *model.Creat
 	return nil
 }
 
-func (u *OrderUsecase) GetOrdersPage(ctx context.Context) ([]*model.OrdersPage, error) {
-	orders, err := u.orderRepo.GetOrdersPage(ctx)
+func (u *OrderUsecase) GetOrdersPaginated(ctx context.Context, req *pagination.Request) (*pagination.Response, error) {
 
+	u.paginationService.ValidateAndNormalize(req)
+
+	cursor, effectiveOrder := u.paginationService.GetNavigationParams(*req)
+
+	fetchLimit := u.paginationService.CalculateFetchLimit(req.Limit)
+
+	orders, err := u.orderRepo.GetOrdersPaginated(ctx, cursor, fetchLimit, effectiveOrder, req.SortBy)
 	if err != nil {
 		return nil, err
 	}
-	return orders, nil
+	items := make([]interface{}, len(orders))
+	for i, v := range orders {
+		items[i] = v
+	}
+
+	response := u.paginationService.BuildResponse(
+		items,
+		req,
+		func(p interface{}) (time.Time, int64) {
+			orders := p.(model.OrdersPage)
+			return orders.CreatedAt, orders.ID
+		},
+	)
+	return &response, nil
 }
 
 func (u *OrderUsecase) UpdateOrderStatus(

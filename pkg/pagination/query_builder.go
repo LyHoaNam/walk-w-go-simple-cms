@@ -43,7 +43,10 @@ func (qb *QueryBuilder) ApplyCursorPagination(
 	if sortBy == "id" {
 		return qb.applySortByID(query, order, cursorID), nil
 	}
-
+	sortDefault := "created_at"
+	if sortBy == "" {
+		sortBy = sortDefault
+	}
 	// Default: sort by timestamp field (e.g., created_at, updated_at)
 	return qb.applySortByTimestamp(query, order, sortBy, cursorTimestamp, cursorID), nil
 }

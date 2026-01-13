@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"simple-template/internal/database"
 	"simple-template/internal/model"
+	"simple-template/pkg/pagination"
 
 	"github.com/doug-martin/goqu/v9"
 )
@@ -213,7 +214,13 @@ func (r *OrdersRepository) BeginTx(ctx context.Context) (*sql.Tx, error) {
 	return r.db.SQL.BeginTx(ctx, nil)
 }
 
-func (r *OrdersRepository) GetOrdersPage(ctx context.Context) ([]*model.OrdersPage, error) {
+func (r *OrdersRepository) GetOrdersPaginated(
+	ctx context.Context,
+	cursor string,
+	limit int,
+	order string,
+	sortBy string,
+) ([]model.OrdersPage, error) {
 	// Subquery: get latest order status
 	latestStatusSubquery := r.db.Dialect.
 		Select(
@@ -236,7 +243,7 @@ func (r *OrdersRepository) GetOrdersPage(ctx context.Context) ([]*model.OrdersPa
 		).
 		GroupBy("oi.order_id")
 
-	query, args, err := r.db.Dialect.
+	query := r.db.Dialect.
 		Select(
 			goqu.I("orders.id"),
 			goqu.I("orders.payment_status"),
@@ -270,21 +277,30 @@ func (r *OrdersRepository) GetOrdersPage(ctx context.Context) ([]*model.OrdersPa
 		).
 		LeftJoin(
 			orderTotalsSubquery.As("ot"),
-			goqu.On(goqu.Ex{"ot.order_id": goqu.I("orders.id")})).
-		ToSQL()
+			goqu.On(goqu.Ex{"ot.order_id": goqu.I("orders.id")}))
+
+	queryBuilder := pagination.NewQueryBuilder()
+	query, err := queryBuilder.ApplyCursorPaginationWithTablePrefix(query, cursor, limit, order, sortBy, "orders")
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to get orders: %w", err)
+		return nil, fmt.Errorf("failed to apply cursor pagination: %w", err)
 	}
 
-	rows, err := r.db.SQL.QueryContext(ctx, query, args...)
+	queryStr, args, err := query.ToSQL()
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the final query: %w", err)
+	}
+
+	rows, err := r.db.SQL.QueryContext(ctx, queryStr, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query: %w", err)
 	}
 	defer rows.Close()
 
-	var orders []*model.OrdersPage
+	var orders []model.OrdersPage
 	for rows.Next() {
-		order := &model.OrdersPage{}
+		order := model.OrdersPage{}
 		err := rows.Scan(
 			&order.ID,
 			&order.PaymentStatus,

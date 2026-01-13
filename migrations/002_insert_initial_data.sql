@@ -12,6 +12,40 @@ INSERT INTO `category` (`name`) VALUES
     ('Skirt')
 ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
+INSERT INTO customer (first_name, last_name, email, address, phone_number)
+VALUES
+  ('Alice', 'Nguyen', 'alice.nguyen@example.com', '123 Main St, Hanoi', '0901234567'),
+  ('Bob', 'Tran', 'bob.tran@example.com', '456 Le Loi, Ho Chi Minh City', '0912345678'),
+  ('Carol', 'Pham', 'carol.pham@example.com', '789 Nguyen Hue, Da Nang', '0923456789'),
+  ('David', 'Le', 'david.le@example.com', '321 Tran Phu, Can Tho', '0934567890'),
+  ('Eve', 'Hoang', 'eve.hoang@example.com', '654 Bach Dang, Hai Phong', '0945678901'),
+  ('Frank', 'Ngoc', 'frank.ngoc@example.com', '12 Nguyen Trai, Hanoi', '0956789012'),
+  ('Grace', 'Phan', 'grace.phan@example.com', '34 Tran Hung Dao, Hue', '0967890123'),
+  ('Henry', 'Vu', 'henry.vu@example.com', '56 Le Duan, Da Nang', '0978901234'),
+  ('Ivy', 'Dang', 'ivy.dang@example.com', '78 Nguyen Van Cu, Hoi An', '0989012345'),
+  ('Jack', 'Mai', 'jack.mai@example.com', '90 Tran Quoc Toan, Nha Trang', '0990123456'),
+  ('Kim', 'Truong', 'kim.truong@example.com', '101 Le Lai, Vung Tau', '0902345678'),
+  ('Liam', 'Dao', 'liam.dao@example.com', '202 Nguyen Dinh Chieu, Da Lat', '0913456789'),
+  ('Mia', 'Duong', 'mia.duong@example.com', '303 Phan Chu Trinh, Quy Nhon', '0924567890'),
+  ('Noah', 'Huynh', 'noah.huynh@example.com', '404 Le Loi, Can Tho', '0935678901'),
+  ('Olivia', 'Lam', 'olivia.lam@example.com', '505 Tran Phu, Ha Long', '0946789012'),
+  ('Paul', 'Chau', 'paul.chau@example.com', '606 Nguyen Hue, Vinh', '0957890123'),
+  ('Quinn', 'Son', 'quinn.son@example.com', '707 Le Duan, Bien Hoa', '0968901234'),
+  ('Ruby', 'Minh', 'ruby.minh@example.com', '808 Tran Hung Dao, Rach Gia', '0979012345'),
+  ('Sam', 'Kieu', 'sam.kieu@example.com', '909 Nguyen Trai, Long Xuyen', '0980123456'),
+  ('Tina', 'Bao', 'tina.bao@example.com', '111 Le Lai, Vinh Long', '0991234567'),
+  ('Uma', 'Quach', 'uma.quach@example.com', '222 Phan Chu Trinh, Soc Trang', '0902345679'),
+  ('Victor', 'Ly', 'victor.ly@example.com', '333 Nguyen Dinh Chieu, Bac Lieu', '0913456790'),
+  ('Wendy', 'Phung', 'wendy.phung@example.com', '444 Tran Quoc Toan, Ca Mau', '0924567901'),
+  ('Xander', 'Hanh', 'xander.hanh@example.com', '555 Le Loi, Tay Ninh', '0935678012'),
+  ('Yara', 'Tien', 'yara.tien@example.com', '666 Nguyen Van Cu, Phan Thiet', '0946789023'),
+  ('Zane', 'Luu', 'zane.luu@example.com', '777 Tran Phu, Dong Hoi', '0957890134')
+ON DUPLICATE KEY UPDATE
+  first_name = VALUES(first_name),
+  last_name = VALUES(last_name),
+  email = VALUES(email),
+  address = VALUES(address);
+
 INSERT INTO `retail_stores` (`name`, `phone_number`)
 VALUES
   ('Downtown Store', '0123456789'),
@@ -98,18 +132,6 @@ INSERT INTO price (
 (2, 29.99, 14.99, 18.50, 1, CURRENT_TIMESTAMP, NULL),
 (3, 49.99, 34.99, 12.50, 1, CURRENT_TIMESTAMP, NULL);
 
-INSERT INTO customer (first_name, last_name, email, address, phone_number)
-VALUES
-  ('Alice', 'Nguyen', 'alice.nguyen@example.com', '123 Main St, Hanoi', '0901234567'),
-  ('Bob', 'Tran', 'bob.tran@example.com', '456 Le Loi, Ho Chi Minh City', '0912345678'),
-  ('Carol', 'Pham', 'carol.pham@example.com', '789 Nguyen Hue, Da Nang', '0923456789'),
-  ('David', 'Le', 'david.le@example.com', '321 Tran Phu, Can Tho', '0934567890'),
-  ('Eve', 'Hoang', 'eve.hoang@example.com', '654 Bach Dang, Hai Phong', '0945678901')
-ON DUPLICATE KEY UPDATE
-  first_name = VALUES(first_name),
-  last_name = VALUES(last_name),
-  email = VALUES(email),
-  address = VALUES(address);
 
 INSERT INTO `product` (
   `id`, `name`, `description`, `dimension`, `category_id`, `status`, `weight`, `sku`, `barcode`, `material`, `origin`, `brand`, `img_url`
